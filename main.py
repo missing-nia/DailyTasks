@@ -1,15 +1,39 @@
 import discord
 import os
+import pymongo
 from dotenv import load_dotenv 
 from discord.ext import commands
+from pymongo import MongoClient
 
 load_dotenv()
 
 #GRAP THE API TOKEN FROM THE .ENV FILE
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
+#INITIALIZE THE BOT
 bot = commands.Bot(command_prefix='?')
-	
+
+#CONNECT TO THE DATABASE
+uri = "DATABASE_URL"
+cluster = MongoClient(uri)
+
+db = cluster["daily_tasks"]
+
+collection = db["daily_tasks"]
+
+#TEST MONGODB
+#NOTE: SHOULD CHECK FOR EXISTING DATA BEFORE ATTEMPTING TO INSERT IN FINISHED CODE
+testdata = {"_id": 39403490, "tasks": [{"taskName": "homework", "timeAccumulated": 300, "commits": [{"date": "01-12-1997", "time": 65}]}]}
+tasks = db.tasks
+tasks.insert_one(testdata)
+
+#TEST UPDATING DATA
+db.tasks.update_one(
+	{'_id': 39403490, 'tasks.taskName': 'homework'},
+	{'$push': {'tasks.$.commits': {"date": "01-13-1997", "time": 50}}})
+
+
+#DISCORD BOT COMMANDS	
 @bot.command(brief="Adds a specified task")
 async def addtask(ctx, task):
 		await ctx.send('Added task \"{}\"'.format(task))

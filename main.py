@@ -23,19 +23,27 @@ collection = db["daily_tasks"]
 
 #TEST MONGODB
 #NOTE: SHOULD CHECK FOR EXISTING DATA BEFORE ATTEMPTING TO INSERT IN FINISHED CODE
-testdata = {"_id": 39403490, "tasks": [{"taskName": "homework", "timeAccumulated": 300, "commits": [{"date": "01-12-1997", "time": 65}]}]}
-tasks = db.tasks
-tasks.insert_one(testdata)
+#testdata = {"_id": 39403490, "tasks": [{"taskName": "homework", "timeAccumulated": 300, "commits": [{"date": "01-12-1997", "time": 65}]}]}
+#tasks = db.tasks
+#tasks.insert_one(testdata)
 
 #TEST UPDATING DATA
-db.tasks.update_one(
-	{'_id': 39403490, 'tasks.taskName': 'homework'},
-	{'$push': {'tasks.$.commits': {"date": "01-13-1997", "time": 50}}})
+#db.tasks.update_one(
+	#{'_id': 39403490, 'tasks.taskName': 'homework'},
+	#{'$push': {'tasks.$.commits': {"date": "01-13-1997", "time": 50}}})
 
 
 #DISCORD BOT COMMANDS	
-@bot.command(brief="Adds a specified task")
+@bot.command(brief = "Adds a specified task")
 async def addtask(ctx, task):
+	#CHECK IF TASK IS ALREADY IN THE DATABASE
+	cur = db.tasks.find({"_id": ctx.message.author.id, "tasks.taskName": task})
+	res = list(cur)
+	
+	if len(res) != 0:
+		await ctx.send('Task \"{}\" already exists. Please choose a different name or remove existing task using ?removetask'.format(task))
+	else:
+		db.tasks.insert_one({"_id": ctx.message.author.id, "tasks": [{"taskName": task, "timeAccumulated": 0, "commits": [{}]}]})
 		await ctx.send('Added task \"{}\"'.format(task))
 		
 @addtask.error

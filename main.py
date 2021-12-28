@@ -36,14 +36,22 @@ collection = db["daily_tasks"]
 #DISCORD BOT COMMANDS	
 @bot.command(brief = "Adds a specified task")
 async def addtask(ctx, task):
-	#CHECK IF TASK IS ALREADY IN THE DATABASE
-	cur = db.tasks.find({"_id": ctx.message.author.id, "tasks.taskName": task})
+	#CHECK IF THE USER IS IN THE DATABASE (ONE-TIME SETUP)
+	cur = db.tasks.find({'_id': ctx.message.author.id})
 	res = list(cur)
-	
+	if len(res) == 0:
+		db.tasks.insert_one({'_id': ctx.message.author.id, 'tasks':[]})
+
+	#CHECK IF TASK IS ALREADY IN THE DATABASE
+	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
+	res = list(cur)
 	if len(res) != 0:
 		await ctx.send('Task \"{}\" already exists. Please choose a different name or remove existing task using ?removetask'.format(task))
 	else:
-		db.tasks.insert_one({"_id": ctx.message.author.id, "tasks": [{"taskName": task, "timeAccumulated": 0, "commits": [{}]}]})
+		db.tasks.update_one(
+			{'_id': ctx.message.author.id},
+			{'$push': {'tasks': {"taskName": task, "timeAccumulated": 0, "commits": []}}}
+		)
 		await ctx.send('Added task \"{}\"'.format(task))
 		
 @addtask.error

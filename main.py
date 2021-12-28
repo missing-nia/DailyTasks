@@ -14,7 +14,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 bot = commands.Bot(command_prefix='?')
 
 #CONNECT TO THE DATABASE
-uri = "DATABASE_URL"
+uri = os.getenv("DATABASE_URL")
 cluster = MongoClient(uri)
 
 db = cluster["daily_tasks"]

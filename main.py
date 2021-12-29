@@ -114,7 +114,9 @@ async def log_error(ctx, error):
 		
 @bot.command(brief = "Lists all registered tasks")
 async def listtasks(ctx):
-	await ctx.send('Current tasks are:')
+	list = db.tasks.find({'_id': ctx.message.author.id}).distinct('tasks.taskName')
+	output = ', '.join(map(str, list))
+	await ctx.send('Current tasks are: {}'.format(output))
 		
 @listtasks.error
 async def listtasks_error(ctx, error):

@@ -73,7 +73,7 @@ async def removetask_error(ctx, error):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
 		
 @bot.command(brief = "Logs time for a specified task")
-async def log(ctx, task, time_in_minutes: int):
+async def logtask(ctx, task, time_in_minutes: int):
 	#CHECK IF TASK IS ALREADY IN THE DATABASE
 	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
 	res = list(cur)
@@ -107,8 +107,8 @@ async def log(ctx, task, time_in_minutes: int):
 	else:
 		await ctx.send('Task \"{}\" does not exist. Please input a valid task name or add a task using ?addtask'.format(task))
 		
-@log.error
-async def log_error(ctx, error):
+@logtask.error
+async def logtask_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
 		

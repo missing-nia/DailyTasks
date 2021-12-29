@@ -1,8 +1,9 @@
 import discord
 import os
 import pymongo
-from dotenv import load_dotenv 
+from datetime import date
 from discord.ext import commands
+from dotenv import load_dotenv 
 from pymongo import MongoClient
 
 load_dotenv()
@@ -71,12 +72,43 @@ async def removetask_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
 		
-@bot.command(brief = "Checks in to a specified task")
-async def checkin(ctx, task, time_in_minutes: int):
-	await ctx.send('Checked in successfully. {} minutes logged for "{}"'.format(time_in_minutes, task))
+@bot.command(brief = "Logs time for a specified task")
+async def log(ctx, task, time_in_minutes: int):
+	#CHECK IF TASK IS ALREADY IN THE DATABASE
+	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
+	res = list(cur)
+	
+	if len(res) != 0:
+		#GET TODAY'S DATE
+		today = date.today().strftime("%Y-%m-%d")
+	
+		#CHECK IF WE'VE ALREADY LOGGED TODAY ONCE
+		cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks': {'$elemMatch': {'taskName': task,'commits': {'$elemMatch': {'date': today,}}}}})
+		res = list(cur)
+		if len(res) != 0:
+			#UPDATE THE EXISTING LOG
+			db.tasks.update_one(
+				{'_id': ctx.message.author.id},
+				{'$inc': {'tasks.$[tasks].commits.$[commits].time': time_in_minutes, 'tasks.$[tasks].timeAccumulated': time_in_minutes}},
+				array_filters = [{'tasks.taskName': task}, {'commits.date': today}]
+			)
+		else:
+			#INSERT A NEW LOG FOR TODAY
+			db.tasks.update_one(
+				{'_id': ctx.message.author.id, 'tasks.taskName': task},
+				{
+					'$push': 
+						{'tasks.$.commits': {'date': today, 'time': time_in_minutes}},
+					'$inc':
+						{'tasks.$.timeAccumulated': time_in_minutes}
+				}
+			)
+		await ctx.send('Logged successfully. {} minutes logged for "{}"'.format(time_in_minutes, task))		
+	else:
+		await ctx.send('Task \"{}\" does not exist. Please input a valid task name or add a task using ?addtask'.format(task))
 		
-@checkin.error
-async def checkin_error(ctx, error):
+@log.error
+async def log_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
 		

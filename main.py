@@ -123,4 +123,18 @@ async def listtasks_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
 		
+@bot.command(brief = "Gives statistics for your tasks")
+async def taskstats(ctx, task = None, filter = None):
+	out = ['Some stats for your tasks:']
+	list = db.tasks.find({'_id': ctx.message.author.id}).distinct('tasks')
+	for dict in list:
+		out.append('{}: {} minutes'.format(dict.get('taskName'), dict.get('timeAccumulated')))
+	await ctx.send('\n'.join(out))
+
+@taskstats.error
+async def taskstats_error(ctx, error):
+	if isinstance(error, commands.MissingRequireArgument):
+		await ctx.send('Invalid arguments! Please use ?help for further information')
+		
+		
 bot.run(DISCORD_TOKEN)

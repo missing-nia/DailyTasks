@@ -2,9 +2,18 @@ import discord
 import os
 import pymongo
 from datetime import date
+from datetime import datetime
 from discord.ext import commands
 from dotenv import load_dotenv 
 from pymongo import MongoClient
+
+
+#DATE DIFFERENCE FUNCTION
+def date_diff(d1, d2):
+	d1 = datetime.strptime(d1, "%Y-%m-%d")
+	d2 = datetime.strptime(d2, "%Y-%m-%d")
+	return abs((d2-d1).days)
+
 
 load_dotenv()
 
@@ -124,17 +133,39 @@ async def listtasks_error(ctx, error):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
 		
 @bot.command(brief = "Gives statistics for your tasks")
-async def taskstats(ctx, task = None, filter = None):
-	out = ['Some stats for your tasks:']
-	list = db.tasks.find({'_id': ctx.message.author.id}).distinct('tasks')
-	for dict in list:
-		out.append('{}: {} minutes'.format(dict.get('taskName'), dict.get('timeAccumulated')))
+async def taskstats(ctx, task = None, days = None):
+	out = ['Some stats for your tasks:']	
+	taskList = db.tasks.find({'_id': ctx.message.author.id}).distinct('tasks')
+	
+	if task:
+		taskList = [x for x in taskList if x['taskName'] == task]
+			
+	for dict in taskList:
+		if days:
+			#GET COMMITS FOR THE NUMBER OF DAYS REQUESTED
+			intDays = int(days)	
+		
+			if intDays <= 0:
+				out = ['Invalid number of days. Please input a number of days greater than zero']
+				break
+						
+			commits = dict.get('commits')
+			commits = [x for x in commits if date_diff(x['date'], date.today().strftime("%Y-%m-%d")) < intDays]
+			time = 0
+			
+			for dict in commits:
+				time += dict.get('time')
+	
+			out.append('{} minutes over {} days'.format(time, intDays))
+			out.append('{} minutes average per day'.format(int(time/intDays)))
+			out.append('{} days commited'.format(len(commits)))
+		else:
+			out.append('{}: {} minutes'.format(dict.get('taskName'), dict.get('timeAccumulated')))		
 	await ctx.send('\n'.join(out))
 
 @taskstats.error
 async def taskstats_error(ctx, error):
 	if isinstance(error, commands.MissingRequireArgument):
 		await ctx.send('Invalid arguments! Please use ?help for further information')
-		
 		
 bot.run(DISCORD_TOKEN)

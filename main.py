@@ -124,7 +124,7 @@ async def logtask_error(ctx, error):
 @bot.command(brief = "Lists all registered tasks")
 async def listtasks(ctx):
 	list = db.tasks.find({'_id': ctx.message.author.id}).distinct('tasks.taskName')
-	output = ', '.join(map(str, list))
+	output = '```\n' + '\n'.join(map(str, list)) + '```'
 	await ctx.send('Current tasks are: {}'.format(output))
 		
 @listtasks.error
@@ -134,7 +134,7 @@ async def listtasks_error(ctx, error):
 		
 @bot.command(brief = "Gives statistics for your tasks")
 async def taskstats(ctx, task = None, days = None):
-	out = ['Some stats for your tasks:']	
+	out = ['Some stats for your tasks: ```']	
 	taskList = db.tasks.find({'_id': ctx.message.author.id}).distinct('tasks')
 	
 	if task:
@@ -161,6 +161,7 @@ async def taskstats(ctx, task = None, days = None):
 			out.append('{} days commited'.format(len(commits)))
 		else:
 			out.append('{}: {} minutes'.format(dict.get('taskName'), dict.get('timeAccumulated')))		
+	out.append('```')
 	await ctx.send('\n'.join(out))
 
 @taskstats.error

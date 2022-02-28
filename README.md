@@ -5,5 +5,5 @@ A simple Discord bot designed to track daily time spent on various tasks specifi
 pip install python-dotenv
 pip install pymongo
 pip install dnspython
-py -3 -m pip install -U discord.py
-```
+pip install -U discord.py
+pip install typing```

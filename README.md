@@ -6,4 +6,5 @@ pip install python-dotenv
 pip install pymongo
 pip install dnspython
 pip install -U discord.py
-pip install typing```
+pip install typing
+```

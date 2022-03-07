@@ -183,5 +183,26 @@ async def taskstats(ctx, user: Optional[discord.Member], task: Optional[str], da
 async def taskstats_error(ctx, error):
 	if isinstance(error, commands.MissingRequireArgument):
 		await ctx.send('Invalid arguments! Please use `?help` for further information')
+
+@bot.command(brief = "Renames a task")
+async def renametask(ctx, old_task_name: str, new_task_name: str):
+	#CHECK IF THE TASK IS IN THE DATABASE
+	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': old_task_name})
+	res = list(cur)
+	
+	if len(res) != 0:
+		#UPDATE THE TASK NAME
+		db.tasks.update_one(
+			{'_id': ctx.message.author.id, 'tasks.taskName': old_task_name},
+			{'$set': {'tasks.$.taskName': new_task_name}}
+		)		
+		await ctx.send('Task `{}` renamed to `{}` successfully.'.format(old_task_name, new_task_name))		
+	else:
+		await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(old_task_name))
+		
+@renametask.error
+async def renametask_error(ctx, error):
+	if isinstance(error, commands.MissingRequiredArgument):
+		await ctx.send('Invalid arguments! Please use `?help` for further information')
 	
 bot.run(DISCORD_TOKEN)

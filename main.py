@@ -34,7 +34,7 @@ collection = db["daily_tasks"]
 
 #DISCORD BOT COMMANDS	
 @bot.command(brief = "Adds a specified task")
-async def addtask(ctx, task):
+async def addtask(ctx, task: str):
 	#CHECK IF THE USER IS IN THE DATABASE (ONE-TIME SETUP)
 	cur = db.tasks.find({'_id': ctx.message.author.id})
 	res = list(cur)
@@ -47,22 +47,22 @@ async def addtask(ctx, task):
 	res = list(cur)
 	
 	if len(res) != 0:
-		await ctx.send('Task \"{}\" already exists. Please choose a different name or remove existing task using ?removetask'.format(task))
+		await ctx.send('Task `{}` already exists. Please choose a different name or remove existing task using `?removetask`'.format(task))
 	else:
 		#INSERT NEW TASK
 		db.tasks.update_one(
 			{'_id': ctx.message.author.id},
 			{'$push': {'tasks': {'taskName': task, 'timeAccumulated': 0, 'commits': []}}}
 		)
-		await ctx.send('Added task \"{}\"'.format(task))
+		await ctx.send('Added task `{}`'.format(task))
 		
 @addtask.error
 async def addtask_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
-		await ctx.send('Invalid arguments! Please use ?help for further information')
+		await ctx.send('Invalid arguments! Please use `?help` for further information')
 		
 @bot.command(brief = "Removes a specified task")
-async def removetask(ctx, task):
+async def removetask(ctx, task: str):
 	#CHECK IF TASK IS IN THE DATABASE
 	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
 	res = list(cur)
@@ -73,17 +73,17 @@ async def removetask(ctx, task):
 			{'_id': ctx.message.author.id},
 			{'$pull': {'tasks': {'taskName': task}}}
 		)
-		await ctx.send('Removed task \"{}\"'.format(task))
+		await ctx.send('Removed task `{}`'.format(task))
 	else:
-		await ctx.send('Task \"{}\" does not exist. Please input a valid task name or add a task using ?addtask'.format(task))
+		await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(task))
 		
 @removetask.error
 async def removetask_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
-		await ctx.send('Invalid arguments! Please use ?help for further information')
+		await ctx.send('Invalid arguments! Please use `?help` for further information')
 		
 @bot.command(brief = "Logs time for a specified task")
-async def logtask(ctx, task, time_in_minutes: int):
+async def logtask(ctx, task: str, time_in_minutes: int):
 	#CHECK IF TASK IS ALREADY IN THE DATABASE
 	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
 	res = list(cur)
@@ -115,12 +115,12 @@ async def logtask(ctx, task, time_in_minutes: int):
 			)
 		await ctx.send('Logged successfully. {} minutes logged for "{}"'.format(time_in_minutes, task))		
 	else:
-		await ctx.send('Task \"{}\" does not exist. Please input a valid task name or add a task using ?addtask'.format(task))
+		await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(task))
 		
 @logtask.error
 async def logtask_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
-		await ctx.send('Invalid arguments! Please use ?help for further information')
+		await ctx.send('Invalid arguments! Please use `?help` for further information')
 		
 @bot.command(brief = "Lists all registered tasks")
 async def listtasks(ctx):
@@ -131,7 +131,7 @@ async def listtasks(ctx):
 @listtasks.error
 async def listtasks_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
-		await ctx.send('Invalid arguments! Please use ?help for further information')
+		await ctx.send('Invalid arguments! Please use `?help` for further information')
 		
 @bot.command(brief = "Gives statistics for your tasks")
 async def taskstats(ctx, user: Optional[discord.Member], task: Optional[str], days: Optional[int]):
@@ -151,7 +151,7 @@ async def taskstats(ctx, user: Optional[discord.Member], task: Optional[str], da
 		
 		#CHECK THAT THE TASK QUERY WAS VALID
 		if len(taskList) == 0:
-			out = ['Invalid task. Please input a registered task or use ?addtask to add one']
+			out = ['Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`']
 	
 	if len(taskList) > 0:
 		#GET STATS FOR TASK(S)
@@ -182,6 +182,6 @@ async def taskstats(ctx, user: Optional[discord.Member], task: Optional[str], da
 @taskstats.error
 async def taskstats_error(ctx, error):
 	if isinstance(error, commands.MissingRequireArgument):
-		await ctx.send('Invalid arguments! Please use ?help for further information')
-		
+		await ctx.send('Invalid arguments! Please use `?help` for further information')
+	
 bot.run(DISCORD_TOKEN)

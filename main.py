@@ -183,12 +183,16 @@ async def taskstats_error(ctx, error):
 async def renametask(ctx, old_task_name: str, new_task_name: str):
 	#CHECK IF THE TASK IS IN THE DATABASE
     if in_db({'_id': ctx.message.author.id, 'tasks.taskName': old_task_name}) == True:
-		#UPDATE THE TASK NAME
-		db.tasks.update_one(
-			{'_id': ctx.message.author.id, 'tasks.taskName': old_task_name},
-			{'$set': {'tasks.$.taskName': new_task_name}}
-		)		
-		await ctx.send('Task `{}` renamed to `{}` successfully.'.format(old_task_name, new_task_name))
+        #MAKE SURE WE DONT CHANGE TO AN EXISTING TASK NAME
+        if in_db({'_id': ctx.message.author.id, 'tasks.taskName': new_task_name}) == True:
+            await ctx.send('Task `{}` already exists! Please choose a different name'.format(new_task_name))     
+        else:
+            #UPDATE THE TASK NAME
+            db.tasks.update_one(
+                {'_id': ctx.message.author.id, 'tasks.taskName': old_task_name},
+                {'$set': {'tasks.$.taskName': new_task_name}}
+            )		
+            await ctx.send('Task `{}` renamed to `{}` successfully.'.format(old_task_name, new_task_name))
     else:
         await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(old_task_name))
 		

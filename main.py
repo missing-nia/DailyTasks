@@ -15,7 +15,6 @@ def date_diff(d1, d2):
 	d2 = datetime.strptime(d2, "%Y-%m-%d")
 	return abs((d2-d1).days)
 
-
 load_dotenv()
 
 #GRAP THE API TOKEN FROM THE .ENV FILE
@@ -32,21 +31,25 @@ db = cluster["daily_tasks"]
 
 collection = db["daily_tasks"]
 
+#DATABASE FIND
+#DECLARING HERE SO WE CAN USE "db"
+def in_db(query):
+    cur = db.tasks.find(query)
+    res = list(cur)
+    if len(res) != 0:
+        return True
+    return False
+    
+
 #DISCORD BOT COMMANDS	
 @bot.command(brief = "Adds a specified task")
 async def addtask(ctx, task: str):
 	#CHECK IF THE USER IS IN THE DATABASE (ONE-TIME SETUP)
-	cur = db.tasks.find({'_id': ctx.message.author.id})
-	res = list(cur)
-	
-	if len(res) == 0:
+	if in_db({'_id': ctx.message.author.id}) == False:
 		db.tasks.insert_one({'_id': ctx.message.author.id, 'tasks':[]})
 
 	#CHECK IF TASK IS ALREADY IN THE DATABASE
-	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
-	res = list(cur)
-	
-	if len(res) != 0:
+	if in_db({'_id': ctx.message.author.id, 'tasks.taskName': task}) == True:
 		await ctx.send('Task `{}` already exists. Please choose a different name or remove existing task using `?removetask`'.format(task))
 	else:
 		#INSERT NEW TASK
@@ -64,10 +67,7 @@ async def addtask_error(ctx, error):
 @bot.command(brief = "Removes a specified task")
 async def removetask(ctx, task: str):
 	#CHECK IF TASK IS IN THE DATABASE
-	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
-	res = list(cur)
-	
-	if len(res) != 0:
+	if in_db({'_id': ctx.message.author.id, 'tasks.taskName': task}) == True:
 		#REMOVE EXISTING TASK
 		db.tasks.update_one(
 			{'_id': ctx.message.author.id},
@@ -85,17 +85,12 @@ async def removetask_error(ctx, error):
 @bot.command(brief = "Logs time for a specified task")
 async def logtask(ctx, task: str, time_in_minutes: int):
 	#CHECK IF TASK IS ALREADY IN THE DATABASE
-	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': task})
-	res = list(cur)
-	
-	if len(res) != 0:
+	if in_db({'_id': ctx.message.author.id, 'tasks.taskName': task}) == True:
 		#GET TODAY'S DATE
 		today = date.today().strftime("%Y-%m-%d")
 	
 		#CHECK IF WE'VE ALREADY LOGGED TODAY ONCE
-		cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks': {'$elemMatch': {'taskName': task,'commits': {'$elemMatch': {'date': today,}}}}})
-		res = list(cur)
-		if len(res) != 0:
+		if in_db({'_id': ctx.message.author.id, 'tasks': {'$elemMatch': {'taskName': task,'commits': {'$elemMatch': {'date': today,}}}}}) == True:
 			#UPDATE THE EXISTING LOG
 			db.tasks.update_one(
 				{'_id': ctx.message.author.id},
@@ -113,7 +108,7 @@ async def logtask(ctx, task: str, time_in_minutes: int):
 						{'tasks.$.timeAccumulated': time_in_minutes}
 				}
 			)
-		await ctx.send('Logged successfully. {} minutes logged for "{}"'.format(time_in_minutes, task))		
+		await ctx.send('Logged successfully. `{}` minutes logged for `{}`'.format(time_in_minutes, task))		
 	else:
 		await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(task))
 		
@@ -187,22 +182,19 @@ async def taskstats_error(ctx, error):
 @bot.command(brief = "Renames a task")
 async def renametask(ctx, old_task_name: str, new_task_name: str):
 	#CHECK IF THE TASK IS IN THE DATABASE
-	cur = db.tasks.find({'_id': ctx.message.author.id, 'tasks.taskName': old_task_name})
-	res = list(cur)
-	
-	if len(res) != 0:
+    if in_db({'_id': ctx.message.author.id, 'tasks.taskName': old_task_name}) == True:
 		#UPDATE THE TASK NAME
 		db.tasks.update_one(
 			{'_id': ctx.message.author.id, 'tasks.taskName': old_task_name},
 			{'$set': {'tasks.$.taskName': new_task_name}}
 		)		
-		await ctx.send('Task `{}` renamed to `{}` successfully.'.format(old_task_name, new_task_name))		
-	else:
-		await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(old_task_name))
+		await ctx.send('Task `{}` renamed to `{}` successfully.'.format(old_task_name, new_task_name))
+    else:
+        await ctx.send('Task `{}` does not exist. Please input a valid task name or add a task using `?addtask`'.format(old_task_name))
 		
 @renametask.error
 async def renametask_error(ctx, error):
 	if isinstance(error, commands.MissingRequiredArgument):
 		await ctx.send('Invalid arguments! Please use `?help` for further information')
-	
+		
 bot.run(DISCORD_TOKEN)
